@@ -120,6 +120,10 @@ pip install -r requirements.txt
 python -m src.main
 ```
 
+### Sample Output
+
+![Terminal output showing top 5 recommendations](Screenshot%202026-04-12%20192442.png)
+
 ### Running Tests
 
 Run the starter tests with:
