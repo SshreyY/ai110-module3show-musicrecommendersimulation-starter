@@ -58,6 +58,41 @@ Max possible score: **7.5** (perfect match on all features)
 
 All songs in the catalog are scored using the rule above. The **Ranking Rule** then sorts them highest-to-lowest and returns the top N results (default: 3). The scoring rule answers "how good is this one song?" — the ranking rule answers "which songs do I actually show the user?"
 
+### Data Flow
+
+```mermaid
+flowchart TD
+    A[User Preference Profile\ngenre · mood · energy · valence · danceability · acousticness] --> B[Load songs.csv\n18 songs]
+    B --> C{For each song in catalog}
+    C --> D[Score song\ngenre match × 2.0\nmood match × 1.5\nproximity energy × 1.5\nproximity valence × 1.0\nproximity danceability × 0.8\nproximity acousticness × 0.7]
+    D --> E[song score out of 7.5]
+    E --> C
+    C --> F[All 18 songs scored]
+    F --> G[Sort highest → lowest]
+    G --> H[Return Top K results\ndefault k = 3]
+    H --> I[Display title · score · explanation]
+```
+
+### Algorithm Recipe
+
+| Feature | Points | Method |
+|---|---|---|
+| Genre match | up to 2.0 | Full points if genre equals user preference, zero otherwise |
+| Mood match | up to 1.5 | Full points if mood equals user preference, zero otherwise |
+| Energy proximity | up to 1.5 | `(1 - \|song.energy - user.energy\|) × 1.5` |
+| Valence proximity | up to 1.0 | `(1 - \|song.valence - user.valence\|) × 1.0` |
+| Danceability proximity | up to 0.8 | `(1 - \|song.danceability - user.danceability\|) × 0.8` |
+| Acousticness proximity | up to 0.7 | `(1 - \|song.acousticness - user.acousticness\|) × 0.7` |
+
+**Max possible score: 7.5**
+
+### Expected Biases
+
+- **Genre lock-in:** Genre carries the most weight (2.0), so a perfectly-matched chill jazz track will still lose to a mediocre lofi track if the user's favorite genre is lofi. Great cross-genre discoveries get buried.
+- **Cold start:** The system knows nothing about the user beyond what they explicitly enter. A new user who doesn't know their "target valence" will get a worse result than one who does.
+- **Small catalog bias:** With only 18 songs, some genres and moods have only one representative. If the user wants "metal" or "classical," they'll always get the same song at the top regardless of their numeric preferences.
+- **No history or feedback:** The system can't learn from what the user skips or replays, so it can't correct itself over time.
+
 ---
 
 ## Getting Started
