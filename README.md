@@ -11,23 +11,52 @@ Your goal is to:
 - Evaluate what your system gets right and wrong
 - Reflect on how this mirrors real world AI recommenders
 
-Replace this paragraph with your own summary of what your version does.
+This version builds a content-based music recommender that scores songs by how closely their attributes match a user's taste profile. It prioritizes vibe-matching over genre-locking — energy and valence carry heavy weight so the system can find a lofi jazz track and a soft indie pop song as equally "chill" even though they're different genres.
 
 ---
 
 ## How The System Works
 
-Explain your design in plain language.
+Real-world recommenders like Spotify's Discover Weekly work by building a model of your taste not just what genres you click, but the underlying audio "shape" of what you enjoy and then finding songs whose shape is closest to yours. They combine signals from other users (collaborative filtering) and the song's own attributes (content-based filtering) inside massive neural networks. My version strips that down to the core idea: represent both a song and a user as a set of numbers, then measure how close those numbers are.
 
-Some prompts to answer:
+My recommender is purely content-based. It computes a weighted proximity score for each song against the user's taste profile, then ranks all songs and returns the top matches. Genre and mood are treated as categorical matches (full points or zero). Numeric features such as energy, valence, danceability, acousticness are scored by proximity: `1 - |song_value - user_preference|`, so a song that's close to your preference scores near 1.0 and a song that's far away scores near 0.0. The system prioritizes energy and genre as the strongest signals because those are the features that most immediately define a musical "vibe."
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+### Features each `Song` uses
 
-You can include a simple diagram or bullet list if helpful.
+| Feature        | Type        | Role in scoring              |
+| -------------- | ----------- | ---------------------------- |
+| `genre`        | categorical | Hard match — weight 2.0      |
+| `mood`         | categorical | Soft match — weight 1.5      |
+| `energy`       | float 0–1   | Proximity score — weight 1.5 |
+| `valence`      | float 0–1   | Proximity score — weight 1.0 |
+| `danceability` | float 0–1   | Proximity score — weight 0.8 |
+| `acousticness` | float 0–1   | Proximity score — weight 0.7 |
+
+### What `UserProfile` stores
+
+- Preferred `genre` (string)
+- Preferred `mood` (string)
+- Target `energy` level (float 0–1)
+- Target `valence` (float 0–1)
+- Target `danceability` (float 0–1)
+- Target `acousticness` (float 0–1)
+
+### How scoring works
+
+```
+score = (genre_match × 2.0)
+      + (mood_match × 1.5)
+      + ((1 - |song.energy - user.energy|) × 1.5)
+      + ((1 - |song.valence - user.valence|) × 1.0)
+      + ((1 - |song.danceability - user.danceability|) × 0.8)
+      + ((1 - |song.acousticness - user.acousticness|) × 0.7)
+```
+
+Max possible score: **7.5** (perfect match on all features)
+
+### How recommendations are chosen
+
+All songs in the catalog are scored using the rule above. The **Ranking Rule** then sorts them highest-to-lowest and returns the top N results (default: 3). The scoring rule answers "how good is this one song?" — the ranking rule answers "which songs do I actually show the user?"
 
 ---
 
@@ -41,6 +70,8 @@ You can include a simple diagram or bullet list if helpful.
    python -m venv .venv
    source .venv/bin/activate      # Mac or Linux
    .venv\Scripts\activate         # Windows
+
+   ```
 
 2. Install dependencies
 
@@ -101,12 +132,11 @@ Write 1 to 2 paragraphs here about what you learned:
 - about how recommenders turn data into predictions
 - about where bias or unfairness could show up in systems like this
 
-
 ---
 
 ## 7. `model_card_template.md`
 
-Combines reflection and model card framing from the Module 3 guidance. :contentReference[oaicite:2]{index=2}  
+Combines reflection and model card framing from the Module 3 guidance. :contentReference[oaicite:2]{index=2}
 
 ```markdown
 # 🎧 Model Card - Music Recommender Simulation
@@ -158,6 +188,7 @@ Describe your dataset.
 Where does your recommender work well
 
 You can think about:
+
 - Situations where the top results "felt right"
 - Particular user profiles it served well
 - Simplicity or transparency benefits
@@ -169,6 +200,7 @@ You can think about:
 Where does your recommender struggle
 
 Some prompts:
+
 - Does it ignore some genres or moods
 - Does it treat all users as if they have the same taste shape
 - Is it biased toward high energy or one genre by default
@@ -181,6 +213,7 @@ Some prompts:
 How did you check your system
 
 Examples:
+
 - You tried multiple user profiles and wrote down whether the results matched your expectations
 - You compared your simulation to what a real app like Spotify or YouTube tends to recommend
 - You wrote tests for your scoring logic
@@ -208,4 +241,4 @@ A few sentences about what you learned:
 - What surprised you about how your system behaved
 - How did building this change how you think about real music recommenders
 - Where do you think human judgment still matters, even if the model seems "smart"
-
+```
