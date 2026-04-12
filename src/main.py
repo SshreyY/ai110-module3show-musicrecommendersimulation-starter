@@ -13,7 +13,8 @@ from recommender import load_songs, recommend_songs
 
 
 def main() -> None:
-    songs = load_songs("data/songs.csv") 
+    songs = load_songs("data/songs.csv")
+    print(f"Loaded songs: {len(songs)}")
 
     # Taste profile: focused late-night coder — low energy, high acousticness, neutral valence
     # Critique note: energy (0.35) and acousticness (0.80) are the two features that most
