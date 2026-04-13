@@ -11,13 +11,13 @@ Your goal is to:
 - Evaluate what your system gets right and wrong
 - Reflect on how this mirrors real world AI recommenders
 
-This version builds a content-based music recommender that scores songs by how closely their attributes match a user's taste profile. It prioritizes vibe-matching over genre-locking — energy and valence carry heavy weight so the system can find a lofi jazz track and a soft indie pop song as equally "chill" even though they're different genres.
+This version builds a content-based music recommender that scores songs by how closely their attributes match a user's taste profile. Energy and valence carry heavy weight so the system can find a lofi jazz track and a soft indie pop song as equally "chill" even though they're different genres.
 
 ---
 
 ## How The System Works
 
-Real-world recommenders like Spotify's Discover Weekly work by building a model of your taste not just what genres you click, but the underlying audio "shape" of what you enjoy and then finding songs whose shape is closest to yours. They combine signals from other users (collaborative filtering) and the song's own attributes (content-based filtering) inside massive neural networks. My version strips that down to the core idea: represent both a song and a user as a set of numbers, then measure how close those numbers are.
+Real-world recommenders like Spotify's Discover Weekly build a model of your taste. Not just what genres you click, but the underlying audio shape of what you enjoy, and then find songs whose shape is closest to yours. They combine signals from other users (collaborative filtering) and the song's own attributes (content-based filtering) inside massive neural networks. My version strips that down to one idea: represent both a song and a user as a set of numbers, then measure how close those numbers are.
 
 My recommender is purely content-based. It computes a weighted proximity score for each song against the user's taste profile, then ranks all songs and returns the top matches. Genre and mood are treated as categorical matches (full points or zero). Numeric features such as energy, valence, danceability, acousticness are scored by proximity: `1 - |song_value - user_preference|`, so a song that's close to your preference scores near 1.0 and a song that's far away scores near 0.0. The system prioritizes energy and genre as the strongest signals because those are the features that most immediately define a musical "vibe."
 
@@ -56,7 +56,7 @@ Max possible score: **7.5** (perfect match on all features)
 
 ### How recommendations are chosen
 
-All songs in the catalog are scored using the rule above. The **Ranking Rule** then sorts them highest-to-lowest and returns the top N results (default: 3). The scoring rule answers "how good is this one song?" — the ranking rule answers "which songs do I actually show the user?"
+All songs in the catalog are scored using the rule above. The **Ranking Rule** then sorts them highest-to-lowest and returns the top N results (default: 3). The scoring rule answers "how good is this one song?" and the ranking rule answers "which songs do I actually show the user?"
 
 ### Data Flow
 
@@ -136,7 +136,7 @@ You can add more tests in `tests/test_recommender.py`.
 
 ---
 
-## Phase 4 — Stress Test: Diverse Profiles
+## Phase 4: Stress Test with Diverse Profiles
 
 ### Profile 1: High-Energy Pop
 
@@ -144,7 +144,7 @@ User wants: `genre=pop, mood=happy, energy=0.90, valence=0.85, danceability=0.85
 
 ![High-Energy Pop profile results](Phase4PopProfile.png)
 
-**Observation:** Sunrise City takes #1 (7.26/7.5) with a perfect genre + mood match and close energy. Gym Hero lands #2 (5.82) — same genre but mood doesn't match (intense vs happy), costing 1.5 points. Rooftop Lights sneaks into #3 via a mood match even with a different genre (indie pop), showing that mood weight (1.5) can compensate for a genre miss.
+**Observation:** Sunrise City takes #1 (7.26/7.5) with a perfect genre and mood match and close energy. Gym Hero lands #2 (5.82) with the same genre but the mood doesn't match (intense vs happy), costing it 1.5 points. Rooftop Lights sneaks into #3 through a mood match even with a different genre (indie pop), showing that mood weight (1.5) can make up for a genre miss.
 
 ---
 
@@ -154,7 +154,7 @@ User wants: `genre=lofi, mood=chill, energy=0.35, valence=0.60, danceability=0.5
 
 ![Chill Lofi profile results](Phase4LofiProfile.png)
 
-**Observation:** Library Rain scores a near-perfect 7.44/7.5 — it almost exactly matches every numeric preference. Consistent with Phase 3 verification. Focus Flow (#3, 5.86) gets genre points but misses the mood match (focused ≠ chill), which drops it well below the top two. Spacewalk Thoughts (#4) earns a mood match without a genre match and still places top 5, showing vibe-based discovery across genres.
+**Observation:** Library Rain scores a near-perfect 7.44/7.5 because it almost exactly matches every numeric preference. Consistent with Phase 3. Focus Flow (#3, 5.86) gets genre points but misses the mood match (focused vs chill), which drops it well below the top two. Spacewalk Thoughts (#4) gets the mood match without a genre match and still makes top 5, showing the system can find cross-genre picks when the audio numbers are close enough.
 
 ---
 
@@ -164,17 +164,17 @@ User wants: `genre=rock, mood=intense, energy=0.92, valence=0.40, danceability=0
 
 ![Deep Intense Rock profile results](Phase4RockProfile.png)
 
-**Observation:** Storm Runner is the only rock song in the catalog so it locks #1 (7.34/7.5) regardless of numeric fit. This is the **small catalog bias** in action — the user has no alternative rock option. Gym Hero (#2, 4.87) earns the mood match (intense) and similar energy without the genre bonus, confirming that mood weight alone can carry a song into the top results.
+**Observation:** Storm Runner is the only rock song in the catalog so it locks #1 (7.34/7.5) regardless of numeric fit. The user has no alternative rock option. Gym Hero (#2, 4.87) gets the mood match (intense) and similar energy without the genre bonus, which shows mood weight alone can push a song into the top results.
 
 ---
 
-### Profile 4: Conflicted Vibe (edge case — high energy + chill mood)
+### Profile 4: Conflicted Vibe (edge case: high energy + chill mood)
 
 User wants: `genre=ambient, mood=chill, energy=0.88, valence=0.65, danceability=0.75, acousticness=0.50`
 
 ![Conflicted Vibe profile results](Phase4ConflictedProfile.png)
 
-**Observation:** Spacewalk Thoughts wins at 6.04/7.5 even though its energy (0.28) is way off from the user's target (0.88). The genre + mood categorical match (3.5 combined points) dominated the numeric penalty. This reveals the **categorical weight trap**: the system can be "tricked" into recommending a soft ambient track to someone who wants high-energy because genre/mood labels carry more weight than the actual sound numbers. A real-world fix would be to reduce categorical weights or add a minimum numeric threshold.
+**Observation:** Spacewalk Thoughts wins at 6.04/7.5 even though its energy (0.28) is way off from the user's target (0.88). The genre and mood labels gave it 3.5 points upfront and the energy gap could not overcome that. This is the **categorical weight trap**: the system recommends a soft ambient track to someone who asked for high energy because the labels outweigh the actual sound numbers.
 
 ---
 
@@ -182,11 +182,11 @@ User wants: `genre=ambient, mood=chill, energy=0.88, valence=0.65, danceability=
 
 ### Does the output feel right? (Accuracy vs. Intuition)
 
-**Chill Lofi profile — felt right.**
-Library Rain scoring 7.44/7.5 makes sense to me. It's literally a lofi track, the mood is chill, and the numeric attributes (energy 0.35, acousticness 0.86, valence 0.60) are almost identical to what I set as my preferences. If I were listening at night I'd absolutely want that track on. Midnight Coding at #2 also feels right — same genre and mood, slightly less close on energy. The only mild surprise was Focus Flow landing at #3 despite missing the mood match (focused ≠ chill); it got there purely on genre + numeric proximity, which feels a little off — a "focused" track and a "chill" track don't feel interchangeable to me even if the energy numbers are similar.
+**Chill Lofi profile: felt right.**
+Library Rain scoring 7.44/7.5 makes sense. It's literally a lofi track, the mood is chill, and the numbers (energy 0.35, acousticness 0.86, valence 0.60) are almost identical to what I set as my preferences. Midnight Coding at #2 also feels right, same genre and mood, just slightly less close on energy. The only mild surprise was Focus Flow at #3 despite its mood being "focused" not "chill." It got there on genre plus numeric proximity, which feels off. A focused track and a chill track don't feel interchangeable to me even if the energy numbers are similar.
 
-**High-Energy Pop profile — mostly right, one surprise.**
-Sunrise City at #1 felt correct — it's the closest pop/happy/high-energy match. The surprise was Rooftop Lights sneaking into #3 with genre "indie pop" instead of "pop." The system counted "indie pop" as a genre miss (no +2.0) but gave it +1.5 for the happy mood match, letting it outscore songs that matched energy better. Whether that's right depends on taste — indie pop and pop really are similar vibes, but the hard genre comparison can't see that. A real system would model genre similarity, not just equality.
+**High-Energy Pop profile: mostly right, one surprise.**
+Sunrise City at #1 felt correct. The surprise was Rooftop Lights sneaking into #3 with genre "indie pop" instead of "pop." The system counted that as a genre miss (no +2.0) but gave it +1.5 for the happy mood match, letting it outscore songs that matched energy better. Whether that's right depends on taste. Indie pop and pop really are similar vibes but the system can't see that. It just checks if the strings are equal.
 
 ---
 
@@ -211,15 +211,15 @@ The reason it ranked first is that it hit the two highest-weighted features perf
 
 ### Is the genre weight too strong?
 
-No single song dominated every list — each profile had a different #1 — so the system isn't completely broken. But genre weight (2.0) is clearly the deciding factor in close races. The **Conflicted Vibe** result is the clearest evidence: Spacewalk Thoughts won despite having the worst energy match in the top 5, because its genre (ambient) + mood (chill) match returned 3.5 points while the energy penalty only cost ~1.35. A user who wanted high-energy ambient would get a mellow ambient track instead.
+No single song dominated every list and each profile had a different #1, so the system is not completely broken. But genre weight (2.0) is clearly the deciding factor in close races. The **Conflicted Vibe** result is the clearest evidence. Spacewalk Thoughts won despite having the worst energy match in the top 5 because its genre and mood match returned 3.5 points while the energy penalty only cost around 1.35. A user who wanted high-energy ambient would get a mellow ambient track.
 
-Reducing genre from 2.0 to 0.5 would make numeric features dominate — energy and valence would drive results, which could surface better cross-genre matches. But it would also mean a rock user might get pop recommendations if the energy lines up. The right weight depends on whether you trust genre labels or audio attributes more.
+Reducing genre from 2.0 to 0.5 would make energy and valence drive results, which would help with cross-genre cases. But it would also mean a rock user might get pop recommendations if the energy lines up. The right weight depends on whether you trust genre labels or audio attributes more.
 
 ---
 
 ### Experiment: Weight Shift (genre 2.0→1.0, energy 1.5→3.0)
 
-**New max score: 8.0** (genre 1.0 + mood 1.5 + energy 3.0 + valence 1.0 + dance 0.8 + acoustic 0.7). Note: the display still shows `/ 7.5` since the denominator was not updated for the experiment — scores above 7.5 are not bugs, they reflect the higher ceiling.
+**New max score: 8.0** (genre 1.0 + mood 1.5 + energy 3.0 + valence 1.0 + dance 0.8 + acoustic 0.7). Note: the display still shows `/ 7.5` since the denominator was not updated for this experiment. Scores above 7.5 are not bugs. They just reflect the higher ceiling.
 
 #### High-Energy Pop (experiment)
 ![High-Energy Pop experiment](Phase4PopProfile_exp.png)
@@ -234,14 +234,14 @@ Reducing genre from 2.0 to 0.5 would make numeric features dominate — energy a
 #### Deep Intense Rock (experiment)
 ![Deep Intense Rock experiment](Phase4RockProfile_exp.png)
 
-**What changed:** Storm Runner still dominates at 7.83. No ranking changes at the top. Rock is an easy case — only one rock song exists, so genre+mood+energy all align and no reordering happens.
+**What changed:** Storm Runner still dominates at 7.83. No ranking changes at the top. Rock is an easy case because only one rock song exists. Genre, mood, and energy all align so there is nothing to reorder.
 
 #### Conflicted Vibe (experiment)
 ![Conflicted Vibe experiment](Phase4ConflictedProfile_exp.png)
 
-**Most interesting result.** Spacewalk Thoughts still wins (#1, 5.64) despite its energy (0.28) being far from the target (0.88) — the genre+mood match (2.5 pts) still outweighs the energy penalty. However, **Neon Pulse jumped to #3** with a perfect energy score of +3.0. Under the original weights it wasn't even top 5; now it almost breaks through. This shows the weight shift did reduce the categorical lock-in but not enough to fully fix the edge case — genre+mood combined still outweighs even a maxed-out energy score.
+**Most interesting result.** Spacewalk Thoughts still wins (#1, 5.64) despite its energy (0.28) being far from the target (0.88). The genre and mood match (2.5 pts) still outweighs the energy penalty. But **Neon Pulse jumped to #3** with a perfect energy score of +3.0. Under the original weights it was not even top 5. Now it almost breaks through. The weight shift reduced how much labels dominate but it was not enough to fully fix the edge case. Genre and mood combined still beat a maxed-out energy score.
 
-**Conclusion:** Doubling energy and halving genre made the system more sensitive to audio attributes and less locked to labels, which feels more accurate for the Conflicted Vibe case. But categorical features (genre+mood combined = 2.5 pts) can still override numeric signals. A better fix would require either a minimum energy threshold or treating genre as a soft boost rather than an on/off switch.
+**Conclusion:** Doubling energy and halving genre made the system more responsive to audio attributes. But genre and mood together (2.5 pts) can still override numeric signals. A real fix would need a minimum energy threshold or genre treated as a soft boost rather than an all-or-nothing match.
 
 > Weights were reverted to the original values (genre=2.0, energy=1.5) after this experiment.
 
@@ -249,11 +249,11 @@ Reducing genre from 2.0 to 0.5 would make numeric features dominate — energy a
 
 ## Limitations and Risks
 
-- **Categorical weight trap:** Genre (2.0) and mood (1.5) together equal 3.5 out of 7.5 possible points — nearly half the score. A song can win despite badly mismatched audio numbers if its labels match.
-- **Small catalog:** 18 songs across 14 genres means several genres have only one representative. The Rock user always gets Storm Runner first, not because it's the best fit, but because it's the only option.
-- **No conflict resolution:** When the user sets contradictory preferences (high energy + chill mood), the system doesn't flag it — it just follows the weights and returns confusing results.
+- **Categorical weight trap:** Genre (2.0) and mood (1.5) together are 3.5 out of 7.5 possible points. A song can win despite badly mismatched audio numbers if its labels match.
+- **Small catalog:** 18 songs across 14 genres means several genres have only one representative. The rock user always gets Storm Runner first, not because it's the best fit, but because it's the only option.
+- **No conflict resolution:** When the user sets contradictory preferences (high energy + chill mood), the system doesn't flag it. It just follows the weights and returns confusing results.
 - **Hand-coded attributes:** All numeric values were assigned by one person based on perceived genre norms, not measured audio data. Users with different cultural backgrounds may disagree strongly with the numbers.
-- **No feedback loop:** The system can't learn from skips or replays. It gives the same answer every time for the same input, regardless of whether the user liked the results.
+- **No feedback loop:** The system can't learn from skips or replays. It gives the same answer every time for the same input regardless of whether the user liked the results.
 
 See [model_card.md](model_card.md) for a deeper analysis.
 
@@ -265,117 +265,9 @@ Read and complete `model_card.md`:
 
 [**Model Card**](model_card.md)
 
-Building this recommender taught me that a system's behavior is mostly decided before any user ever touches it — by the weights you assign, the features you choose to include, and the data you collect. I assumed genre would be a reasonable anchor for recommendations, but the Conflicted Vibe experiment showed that anchoring too hard on a label can completely override what the user actually described in numbers. The system was technically doing what I told it to do; the problem was that I told it the wrong thing. Real-world recommenders face the same tension at massive scale, which is why Spotify combines collaborative filtering (what similar users played) with audio signals — neither alone is reliable enough.
+Building this recommender taught me that a system's behavior is mostly decided before any user ever touches it. The weights you assign, the features you include, and the data you collect all shape the output before a single recommendation is made. I assumed genre would be a reasonable anchor but the Conflicted Vibe experiment showed that leaning too hard on a label can completely override what the user described in numbers. The system was doing exactly what I told it to do. The problem was I told it the wrong thing. Real-world recommenders face the same tension at massive scale, which is why Spotify combines what similar users played with audio signals. Neither alone is reliable enough.
 
-Bias in a system like this is quieter than I expected. It doesn't look like an obvious mistake — it looks like a reasonable result. Spacewalk Thoughts showing up for a high-energy user makes perfect sense on paper (genre match + mood match), and you'd only notice something was wrong if you actually listened to it and thought "wait, this is way too soft." That gap between what the math says and what a human hears is exactly where unfairness hides in real AI products. A music app that keeps recommending the same genre because the weights favor it, or that never surfaces music from underrepresented cultures because they're not in the training data, will feel "normal" to most users — but it's systematically leaving some people out.
-
----
-
-## 7. `model_card_template.md`
-
-Combines reflection and model card framing from the Module 3 guidance. :contentReference[oaicite:2]{index=2}
-
-```markdown
-# 🎧 Model Card - Music Recommender Simulation
-
-## 1. Model Name
-
-Give your recommender a name, for example:
-
-> VibeFinder 1.0
+Bias in a system like this is quieter than I expected. It doesn't look like an obvious mistake. It looks like a reasonable result. Spacewalk Thoughts showing up for a high-energy user makes perfect sense on paper because the genre and mood match. You would only notice something was wrong if you actually listened and thought "wait, this is way too soft." That gap between what the math says and what a human hears is exactly where problems hide in real AI products. A music app that keeps recommending the same genre because the weights favor it, or that never recommends music from underrepresented cultures because they're not in the training data, will feel completely normal to most users. But it's leaving some people out every time.
 
 ---
 
-## 2. Intended Use
-
-- What is this system trying to do
-- Who is it for
-
-Example:
-
-> This model suggests 3 to 5 songs from a small catalog based on a user's preferred genre, mood, and energy level. It is for classroom exploration only, not for real users.
-
----
-
-## 3. How It Works (Short Explanation)
-
-Describe your scoring logic in plain language.
-
-- What features of each song does it consider
-- What information about the user does it use
-- How does it turn those into a number
-
-Try to avoid code in this section, treat it like an explanation to a non programmer.
-
----
-
-## 4. Data
-
-Describe your dataset.
-
-- How many songs are in `data/songs.csv`
-- Did you add or remove any songs
-- What kinds of genres or moods are represented
-- Whose taste does this data mostly reflect
-
----
-
-## 5. Strengths
-
-Where does your recommender work well
-
-You can think about:
-
-- Situations where the top results "felt right"
-- Particular user profiles it served well
-- Simplicity or transparency benefits
-
----
-
-## 6. Limitations and Bias
-
-Where does your recommender struggle
-
-Some prompts:
-
-- Does it ignore some genres or moods
-- Does it treat all users as if they have the same taste shape
-- Is it biased toward high energy or one genre by default
-- How could this be unfair if used in a real product
-
----
-
-## 7. Evaluation
-
-How did you check your system
-
-Examples:
-
-- You tried multiple user profiles and wrote down whether the results matched your expectations
-- You compared your simulation to what a real app like Spotify or YouTube tends to recommend
-- You wrote tests for your scoring logic
-
-You do not need a numeric metric, but if you used one, explain what it measures.
-
----
-
-## 8. Future Work
-
-If you had more time, how would you improve this recommender
-
-Examples:
-
-- Add support for multiple users and "group vibe" recommendations
-- Balance diversity of songs instead of always picking the closest match
-- Use more features, like tempo ranges or lyric themes
-
----
-
-## 9. Personal Reflection
-
-A few sentences about what you learned:
-
-- What surprised you about how your system behaved
-- How did building this change how you think about real music recommenders
-- Where do you think human judgment still matters, even if the model seems "smart"
-```

@@ -6,9 +6,11 @@
 
 ---
 
-## 2. Intended Use
+## 2. Intended Use and Non-Intended Use
 
-VibeFinder 1.0 suggests songs from a small catalog based on a user's stated genre preference, mood preference, and four numeric "vibe" sliders (energy, valence, danceability, and acousticness). It is designed for classroom exploration of how content-based recommender systems work — not for production use. The system assumes the user already knows what they want and can express it in numbers; it makes no attempt to learn from listening history or feedback.
+This is a learning tool. It is meant to show how a content-based recommender works by letting you see how weights, labels, and proximity scores combine to rank songs. It is good for classroom demos and for experimenting with what happens when you change a weight.
+
+It is not for real music discovery. 18 songs is not a catalog. The numbers were hand-coded by one person based on one cultural frame of reference. Do not use this to make actual recommendations to real users and do not treat it as a model for how Spotify or any production system actually works.
 
 ---
 
@@ -16,7 +18,7 @@ VibeFinder 1.0 suggests songs from a small catalog based on a user's stated genr
 
 Imagine you tell a friend: "I want something chill, acoustic, low energy, lofi." Your friend scans their playlist and mentally checks each song against what you said. The closer a song matches your description, the more likely they are to suggest it.
 
-VibeFinder works the same way. Each song in the catalog has a set of labels — genre, mood — and a set of numbers that describe how it sounds (energy, how positive it feels, how danceable it is, how acoustic it is). The user's profile has the same information: a preferred genre, a preferred mood, and target numbers.
+VibeFinder works the same way. Each song has labels (genre and mood) and a set of numbers that describe how it sounds: energy, how positive it feels, how danceable it is, how acoustic it is. The user's profile has the same information: a preferred genre, a preferred mood, and target numbers.
 
 For each song, the system computes a score out of 7.5:
 - Genre and mood are checked as exact matches. Get the right genre and you earn 2.0 points; right mood earns 1.5 points.
@@ -38,19 +40,19 @@ Despite the expansion, the dataset skews toward Western popular music styles. Th
 
 ## 5. Strengths
 
-The system works best for users who have a clear, consistent taste profile — someone who knows they want lofi and chill and low energy will get excellent results. Library Rain scored 7.44/7.5 for the Chill Lofi profile, and every song in the top 3 genuinely felt appropriate for that vibe.
+The system works best when the user has a clear consistent taste. Someone who wants lofi, chill, and low energy will get good results. Library Rain scored 7.44/7.5 for the Chill Lofi profile and all three top results felt like the right picks.
 
-The scoring logic is fully transparent: every point contribution is printed alongside the recommendation so the user can see exactly why a song ranked where it did. This is a strength real-world systems often lack — Spotify does not explain why it put a song in your Discover Weekly.
+Every point contribution is printed next to each recommendation so you can see exactly why a song ranked where it did. Spotify does not do that. You have no idea why a song ended up in your Discover Weekly.
 
-The proximity scoring (1 − |difference|) also allows the system to surface cross-genre discoveries. Spacewalk Thoughts (ambient) appeared in the Chill Lofi top 5 because its audio numbers were close enough to the lofi profile, even without a genre match. A pure genre-filter system would have missed it.
+The proximity math also lets the system find songs outside the user's genre if the audio numbers are close enough. Spacewalk Thoughts (ambient) showed up in the Chill Lofi top 5 because its energy and acousticness were close to the lofi profile even though the genre did not match. A system that only filtered by genre would have skipped it.
 
 ---
 
 ## 6. Limitations and Bias
 
-**Categorical weight trap.** Genre (weight 2.0) and mood (weight 1.5) together can contribute up to 3.5 out of 7.5 points — nearly half the total score — through a binary on/off match. This means a song that perfectly matches your genre and mood label but sounds nothing like what you actually want (wrong energy, wrong acousticness) can still outscore a song that matches your audio preferences nearly perfectly but belongs to a slightly different genre. The Conflicted Vibe experiment exposed this directly: Spacewalk Thoughts (energy 0.28) won over songs with energy 0.88 simply because its genre and mood labels matched.
+**Categorical weight trap.** Genre (weight 2.0) and mood (weight 1.5) together are 3.5 out of 7.5 points, almost half the total. A song can match your genre and mood labels but sound nothing like what you want and still win. The Conflicted Vibe experiment showed this clearly. Spacewalk Thoughts (energy 0.28) beat genuinely high-energy songs because its labels matched even though the audio was completely off.
 
-**Small catalog bias.** With only 18 songs and 14 distinct genres, several genres have exactly one representative. A user who wants rock will always see Storm Runner at #1, regardless of how well it actually matches their numeric preferences. There is no competition within the genre to surface a better fit.
+**Small catalog bias.** With 18 songs across 14 genres, some genres have only one song. A user who wants rock will always get Storm Runner at #1 no matter what their numeric preferences are because there is nothing else to compete with it.
 
 **Cold-start problem.** The system has no default profile and cannot learn from behavior. A new user who does not know what "valence 0.6" means will fill in arbitrary numbers and get arbitrary results. Real recommenders solve this by observing a few plays before asking for explicit preferences.
 
@@ -64,13 +66,13 @@ The proximity scoring (1 − |difference|) also allows the system to surface cro
 
 I tested four distinct user profiles:
 
-- **High-Energy Pop** (genre=pop, mood=happy, energy=0.90): Sunrise City ranked #1 as expected. The surprise was Rooftop Lights landing #2 despite being "indie pop" — its happy mood match plus close energy was enough to beat Gym Hero's genre match without a mood match. This showed mood weight (1.5) can compensate for a genre miss in the right conditions.
+- **High-Energy Pop** (genre=pop, mood=happy, energy=0.90): Sunrise City ranked #1 as expected. The surprise was Rooftop Lights landing #2 as an indie pop track. Its happy mood match plus close energy was enough to beat Gym Hero even though Gym Hero had the genre match. That showed mood weight (1.5) can make up for a genre miss.
 
-- **Chill Lofi** (genre=lofi, mood=chill, energy=0.35): Library Rain at 7.44/7.5 — the closest thing to a perfect match in the catalog. Results felt genuinely right. The only mild surprise was Focus Flow (#3) despite a mood mismatch (focused ≠ chill), which raised a question about whether "focused" and "chill" should really be treated as completely different.
+- **Chill Lofi** (genre=lofi, mood=chill, energy=0.35): Library Rain scored 7.44/7.5. Results felt right. The only unexpected one was Focus Flow at #3 despite its mood being "focused" not "chill." It got there on genre plus numeric proximity, which made me wonder if focused and chill should really score the same as a miss.
 
-- **Deep Intense Rock** (genre=rock, mood=intense, energy=0.92): Storm Runner locked #1 automatically. This exposed the small catalog bias — with only one rock song, the system has no choice but to recommend it first regardless of numeric fit.
+- **Deep Intense Rock** (genre=rock, mood=intense, energy=0.92): Storm Runner took #1 automatically. There is only one rock song in the catalog so the system has no choice. The numeric fit does not matter here.
 
-- **Conflicted Vibe / edge case** (genre=ambient, mood=chill, energy=0.88): The clearest bias signal. Spacewalk Thoughts (energy 0.28) won over genuinely high-energy songs because genre+mood labels outweighed a 0.60 energy gap. A real recommender would not recommend a soft ambient track to someone who asked for high-energy music.
+- **Conflicted Vibe / edge case** (genre=ambient, mood=chill, energy=0.88): Spacewalk Thoughts (energy 0.28) won even though the user wanted high energy. Genre and mood gave it 3.5 points upfront and the energy gap could not overcome that. A real recommender would not give a soft ambient track to someone who asked for high energy.
 
 I also ran a weight shift experiment (genre 1.0, energy 3.0) and observed that Neon Pulse entered the top 3 for the Conflicted Vibe profile with a perfect energy score, confirming the system responds predictably to weight changes. Categorical lock-in was reduced but not eliminated.
 
@@ -78,16 +80,19 @@ I also ran a weight shift experiment (genre 1.0, energy 3.0) and observed that N
 
 ## 8. Future Work
 
-- **Soft genre similarity:** Instead of a binary genre match, use a genre similarity matrix (e.g., lofi and ambient are closer than lofi and metal) so cross-genre discoveries are rewarded proportionally.
-- **Minimum numeric thresholds:** Require that energy proximity clears a minimum bar before categorical bonuses are added — this would fix the Conflicted Vibe case where a mismatched song wins on labels alone.
-- **Catalog diversity enforcement:** After scoring, apply a diversity pass that ensures the top 5 results span at least 3 different moods or genres, preventing five nearly identical songs from dominating the list.
-- **Implicit feedback loop:** Track which recommendations the user skips or replays and adjust weights over time, moving from a static profile to a learned one.
-- **Richer dataset:** Expand to 100+ songs with more balanced genre and mood representation, including non-Western music styles, and use standardized audio features from an API rather than hand-coded values.
+- **Soft genre similarity:** Instead of a binary genre match, use a similarity matrix. Lofi and ambient would score something like 0.8 instead of 0. Lofi and metal would stay near 0. That would fix the Conflicted Vibe case where a song wins on labels even though the audio is completely wrong.
+- **Minimum energy threshold:** A song should not be able to win a high-energy query purely on label points. Add a floor so that if your energy is too far off, the label bonus does not count.
+- **Bigger catalog:** 18 songs is not enough to test anything real. 100 or more songs with actual audio features from an API instead of numbers I made up would make results much more meaningful.
+- **Feedback loop:** Let the system track what the user skips or replays and adjust over time. Right now it gives the same answer forever with no way to correct itself.
 
 ---
 
 ## 9. Personal Reflection
 
-Building this made me realize how much of a recommender's behavior is determined before any user ever touches it — by the weights you choose, the features you include, and the data you collect. I assumed genre would be a reasonable anchor for recommendations, but the Conflicted Vibe experiment showed that anchoring too hard on a label can completely override what the user actually described in numbers. The system was technically doing what I told it to do; the problem was that I told it the wrong thing.
+The biggest thing I learned was from the Conflicted Vibe profile. I set energy to 0.88 but genre to ambient and mood to chill, basically contradicting myself. I expected weird results. What I did not expect was that Spacewalk Thoughts with an energy of 0.28 would beat genuinely high energy songs just because its genre and mood labels matched. The system did exactly what I told it to do. The problem was that I told it the wrong thing. That is when it clicked for me that bias in a system is not always a bug. Sometimes it is just the design you chose.
 
-It also changed how I think about Spotify and similar apps. When Discover Weekly surfaces a song I love, it's not magic — it's a much larger version of the same weighted proximity math, trained on millions of users instead of one hand-coded profile. But it still has the same fundamental tensions: do you trust the label, or the audio signal? Do you reward familiarity, or push for discovery? Those are design choices that reflect values, not just math.
+Using Claude to help build this was useful but I had to check everything myself. Claude was good at explaining why something happened in terms of the math but it could not run the code so I verified every output in the terminal before writing anything down. It was more like a thinking partner than a source of truth.
+
+What surprised me most was how real the results felt even though the algorithm is just subtraction and multiplication. When Library Rain scored 7.44 out of 7.5 for the Chill Lofi profile it felt like a genuinely good pick, not like math. I did not expect something that simple to feel that intentional.
+
+If I kept going I would fix the genre binary first. Instead of a song getting 0 or 2 points I would make lofi and ambient score something like 0.8 since they are close but not the same genre. That one change would fix the Conflicted Vibe problem. After that I would expand the catalog to 100 or more songs using real audio features from an API instead of numbers I made up.
