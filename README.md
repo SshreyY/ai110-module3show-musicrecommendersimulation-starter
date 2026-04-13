@@ -122,7 +122,7 @@ python -m src.main
 
 ### Sample Output
 
-![Terminal output showing top 5 recommendations](Screenshot%202026-04-12%20192442.png)
+![Terminal output showing top 5 recommendations](assets/ScreenshotPhase3.png)
 
 ### Running Tests
 
@@ -142,7 +142,7 @@ You can add more tests in `tests/test_recommender.py`.
 
 User wants: `genre=pop, mood=happy, energy=0.90, valence=0.85, danceability=0.85, acousticness=0.10`
 
-![High-Energy Pop profile results](Phase4PopProfile.png)
+![High-Energy Pop profile results](assets/Phase4PopProfile.png)
 
 **Observation:** Sunrise City takes #1 (7.26/7.5) with a perfect genre and mood match and close energy. Gym Hero lands #2 (5.82) with the same genre but the mood doesn't match (intense vs happy), costing it 1.5 points. Rooftop Lights sneaks into #3 through a mood match even with a different genre (indie pop), showing that mood weight (1.5) can make up for a genre miss.
 
@@ -152,7 +152,7 @@ User wants: `genre=pop, mood=happy, energy=0.90, valence=0.85, danceability=0.85
 
 User wants: `genre=lofi, mood=chill, energy=0.35, valence=0.60, danceability=0.55, acousticness=0.80`
 
-![Chill Lofi profile results](Phase4LofiProfile.png)
+![Chill Lofi profile results](assets/Phase4LofiProfile.png)
 
 **Observation:** Library Rain scores a near-perfect 7.44/7.5 because it almost exactly matches every numeric preference. Consistent with Phase 3. Focus Flow (#3, 5.86) gets genre points but misses the mood match (focused vs chill), which drops it well below the top two. Spacewalk Thoughts (#4) gets the mood match without a genre match and still makes top 5, showing the system can find cross-genre picks when the audio numbers are close enough.
 
@@ -162,7 +162,7 @@ User wants: `genre=lofi, mood=chill, energy=0.35, valence=0.60, danceability=0.5
 
 User wants: `genre=rock, mood=intense, energy=0.92, valence=0.40, danceability=0.60, acousticness=0.08`
 
-![Deep Intense Rock profile results](Phase4RockProfile.png)
+![Deep Intense Rock profile results](assets/Phase4RockProfile.png)
 
 **Observation:** Storm Runner is the only rock song in the catalog so it locks #1 (7.34/7.5) regardless of numeric fit. The user has no alternative rock option. Gym Hero (#2, 4.87) gets the mood match (intense) and similar energy without the genre bonus, which shows mood weight alone can push a song into the top results.
 
@@ -172,7 +172,7 @@ User wants: `genre=rock, mood=intense, energy=0.92, valence=0.40, danceability=0
 
 User wants: `genre=ambient, mood=chill, energy=0.88, valence=0.65, danceability=0.75, acousticness=0.50`
 
-![Conflicted Vibe profile results](Phase4ConflictedProfile.png)
+![Conflicted Vibe profile results](assets/Phase4ConflictedProfile.png)
 
 **Observation:** Spacewalk Thoughts wins at 6.04/7.5 even though its energy (0.28) is way off from the user's target (0.88). The genre and mood labels gave it 3.5 points upfront and the energy gap could not overcome that. This is the **categorical weight trap**: the system recommends a soft ambient track to someone who asked for high energy because the labels outweigh the actual sound numbers.
 
@@ -222,22 +222,22 @@ Reducing genre from 2.0 to 0.5 would make energy and valence drive results, whic
 **New max score: 8.0** (genre 1.0 + mood 1.5 + energy 3.0 + valence 1.0 + dance 0.8 + acoustic 0.7). Note: the display still shows `/ 7.5` since the denominator was not updated for this experiment. Scores above 7.5 are not bugs. They just reflect the higher ceiling.
 
 #### High-Energy Pop (experiment)
-![High-Energy Pop experiment](Phase4PopProfile_exp.png)
+![High-Energy Pop experiment](assets/Phase4PopProfile_exp.png)
 
 **What changed:** Sunrise City holds #1 but Rooftop Lights jumped to #2 (6.34), leapfrogging Gym Hero (6.27). Rooftop Lights has no genre match but its happy mood + close energy now earns more than Gym Hero's genre match + slightly closer energy. Energy weight doing exactly what we expected.
 
 #### Chill Lofi (experiment)
-![Chill Lofi experiment](Phase4LofiProfile_exp.png)
+![Chill Lofi experiment](assets/Phase4LofiProfile_exp.png)
 
 **What changed:** Library Rain still #1 but now scores 7.94 (near-perfect under the new 8.0 ceiling) thanks to a perfect +3.0 energy score. Rankings 2–5 stayed the same. Chill Lofi is stable under this change because the top songs already matched energy well.
 
 #### Deep Intense Rock (experiment)
-![Deep Intense Rock experiment](Phase4RockProfile_exp.png)
+![Deep Intense Rock experiment](assets/Phase4RockProfile_exp.png)
 
 **What changed:** Storm Runner still dominates at 7.83. No ranking changes at the top. Rock is an easy case because only one rock song exists. Genre, mood, and energy all align so there is nothing to reorder.
 
 #### Conflicted Vibe (experiment)
-![Conflicted Vibe experiment](Phase4ConflictedProfile_exp.png)
+![Conflicted Vibe experiment](assets/Phase4ConflictedProfile_exp.png)
 
 **Most interesting result.** Spacewalk Thoughts still wins (#1, 5.64) despite its energy (0.28) being far from the target (0.88). The genre and mood match (2.5 pts) still outweighs the energy penalty. But **Neon Pulse jumped to #3** with a perfect energy score of +3.0. Under the original weights it was not even top 5. Now it almost breaks through. The weight shift reduced how much labels dominate but it was not enough to fully fix the edge case. Genre and mood combined still beat a maxed-out energy score.
 
